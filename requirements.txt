@@ -1,0 +1,13 @@
+torch>=1.10
+torchvision>=0.11
+torch-geometric>=2.0.0
+pandas
+numpy
+Pillow
+opencv-python
+dlib
+tqdm
+scikit-learn
+pyyaml
+wandb
+pytest
