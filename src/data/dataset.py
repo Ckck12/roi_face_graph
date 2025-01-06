@@ -1,38 +1,36 @@
 # src/data/dataset.py
+
 import os
 import pandas as pd
 import torch
-import numpy as np
 from torch.utils.data import Dataset
 from PIL import Image
+import numpy as np
+from torchvision import transforms
 
-from .frame_extractor import extract_32_frames
-from .landmark_detector import Landmark68Detector
-
-def calc_face_part_bbox(landmarks, indices):
+def calc_face_part_bbox(landmarks, indices, image_size=224):
     """
-    indices에 해당하는 랜드마크 점들에 대해 x_min,y_min,x_max,y_max를 구한다.
+    indices에 해당하는 랜드마크 점들에 대해 x_min, y_min, x_max, y_max를 구한다.
     """
-    part_points = landmarks[indices]  # shape: (len(indices), 2)
-    x_min = np.min(part_points[:,0])
-    y_min = np.min(part_points[:,1])
-    x_max = np.max(part_points[:,0])
-    y_max = np.max(part_points[:,1])
-    return [x_min,y_min,x_max,y_max]
+    part_points = landmarks[list(indices)]  # shape: (len(indices), 2)
+    x_min = max(np.min(part_points[:, 0]), 0)
+    y_min = max(np.min(part_points[:, 1]), 0)
+    x_max = min(np.max(part_points[:, 0]), image_size)
+    y_max = min(np.max(part_points[:, 1]), image_size)
+    return [x_min, y_min, x_max, y_max]
 
 class FFPlusDataset(Dataset):
     """
-    ff++_c23.csv를 읽고, 각 row에 대해
-    1) video_path => 32프레임 추출
-    2) dlib 68랜드마크 => 왼눈, 오른눈, 코, 입, 머리카락 등 bbox
-    3) 전체 이미지 bbox(= [0,0, W,H])도 추가
-    => frames(32,C,H,W), bboxes(32,N,4), label
+    ff++_c23_landmark.csv를 읽고, 각 row에 대해
+    1) video_npy_path에서 16프레임 로드
+    2) landmark_npy_path에서 16프레임의 랜드마크 로드
+    3) 랜드마크를 이용해 ROI bbox 생성
+    => frames(16,3,224,224), bboxes(16,9,4), label
     """
 
-    def __init__(self, csv_path, shape_predictor_path, dataset_type="train", transform=None, image_size=224):
+    def __init__(self, csv_path, dataset_type="train", transform=None, image_size=224):
         super().__init__()
         self.csv_path = csv_path
-        self.shape_predictor_path = shape_predictor_path
         self.dataset_type = dataset_type
         self.transform = transform
         self.image_size = image_size
@@ -41,82 +39,85 @@ class FFPlusDataset(Dataset):
             raise FileNotFoundError(f"[에러] CSV 파일이 존재하지 않습니다: {self.csv_path}")
 
         self.df = pd.read_csv(self.csv_path)
-        if "type" in self.df.columns:
-            self.df = self.df[self.df["type"] == self.dataset_type].reset_index(drop=True)
+        if "train_type" in self.df.columns:
+            self.df = self.df[self.df["train_type"] == self.dataset_type].reset_index(drop=True)
         if len(self.df) == 0:
             raise ValueError(f"[에러] dataset_type='{self.dataset_type}'에 해당하는 데이터가 없습니다.")
 
-        if not os.path.exists(self.shape_predictor_path):
-            raise FileNotFoundError(f"[에러] dlib 랜드마크 모델이 존재하지 않습니다: {self.shape_predictor_path}")
-
-        self.landmark_detector = Landmark68Detector(self.shape_predictor_path)
-
-        # dlib 68점에서 각 부위 인덱스
-        self.left_eye_idx = range(36,42)
-        self.right_eye_idx = range(42,48)
-        self.nose_idx = range(27,36)
-        self.mouth_idx = range(48,68)
-        # 머리카락은 없음 => 예시로, jaw(0~16)를 "머리"라고 가정?
-        self.hair_idx = range(0,17)
+        # ROI 정의
+        self.roi_indices = {
+            "jawline": range(0, 17),            # [0, 16]
+            "left_eyebrow": range(17, 22),      # [17, 21]
+            "right_eyebrow": range(22, 27),     # [22, 26]
+            "nose": range(27, 36),              # [27, 35]
+            "left_eye": range(36, 42),          # [36, 41]
+            "right_eye": range(42, 48),         # [42, 47]
+            "outer_lip": range(48, 60),         # [48, 59]
+            "inner_lip": range(60, 68),         # [60, 67]
+            "whole_face": None                   # 전체 이미지
+        }
+        self.num_rois = len(self.roi_indices)
 
     def __len__(self):
         return len(self.df)
 
     def __getitem__(self, idx):
         row = self.df.iloc[idx]
-        video_path = row["video_path"]
         label = int(row["label"])
+        video_npy_path = row["video_npy_path"]
+        landmark_npy_path = row["landmark_npy_path"]
 
-        # 1) 32프레임 추출
-        frames = extract_32_frames(video_path)  # list of PIL, length=32
+        # 1) 프레임 로드
+        if not os.path.exists(video_npy_path):
+            raise FileNotFoundError(f"[에러] 비디오 npy 파일이 존재하지 않습니다: {video_npy_path}")
+        frames = np.load(video_npy_path)  # (16, 3, 224, 224)
 
-        # 2) 각 프레임 -> transform -> (C,H,W)
+        if frames.shape != (16, 3, 224, 224):
+            raise ValueError(f"[에러] 비디오 npy 파일의 형태가 올바르지 않습니다: {video_npy_path}")
+
+        # 2) 랜드마크 로드
+        if not os.path.exists(landmark_npy_path):
+            raise FileNotFoundError(f"[에러] 랜드마크 npy 파일이 존재하지 않습니다: {landmark_npy_path}")
+        landmarks = np.load(landmark_npy_path)  # (16, 1, 68, 2)
+
+        if landmarks.shape != (16, 1, 68, 2):
+            raise ValueError(f"[에러] 랜드마크 npy 파일의 형태가 올바르지 않습니다: {landmark_npy_path}")
+
+        # 3) 프레임 변환
         frames_tensor = []
-        bboxes_32 = []
-        for img_pil in frames:
-            w,h = img_pil.size
+        bboxes_16 = []
+        for t in range(16):
+            frame = frames[t]  # (3, 224, 224)
+
             if self.transform:
-                img_t = self.transform(img_pil)  # (C,H,W)
+                # PIL 이미지로 변환
+                frame_pil = Image.fromarray(np.transpose(frame, (1, 2, 0)).astype(np.uint8))
+                frame_t = self.transform(frame_pil)  # (C, H, W)
             else:
-                # transform이 없으면 Tensor 변환
-                img_t = torch.from_numpy(np.array(img_pil)).permute(2,0,1).float()
+                # Tensor 변환
+                frame_t = torch.from_numpy(frame).float()
 
-            frames_tensor.append(img_t)
+            frames_tensor.append(frame_t)
 
-            # 랜드마크 검출
-            img_array = np.array(img_pil)
-            landmarks_68 = self.landmark_detector.detect_landmarks(img_array)
-            if landmarks_68 is None:
-                # 얼굴 없음 => bbox 전부 0
-                n_parts = 6  # 왼눈/오른눈/코/입/머리(가정)/전체
-                part_bboxes = [[0,0,0,0] for _ in range(n_parts)]
-            else:
-                # 부위별 bbox 계산
-                left_eye_box = calc_face_part_bbox(landmarks_68, self.left_eye_idx)
-                right_eye_box = calc_face_part_bbox(landmarks_68, self.right_eye_idx)
-                nose_box = calc_face_part_bbox(landmarks_68, self.nose_idx)
-                mouth_box = calc_face_part_bbox(landmarks_68, self.mouth_idx)
-                hair_box = calc_face_part_bbox(landmarks_68, self.hair_idx)
-                # 전체 이미지 bbox
-                full_box = [0, 0, w, h]
+            # 4) ROI bbox 계산
+            landmarks_frame = landmarks[t, 0, :, :]  # (68, 2)
 
-                part_bboxes = [
-                    left_eye_box,
-                    right_eye_box,
-                    nose_box,
-                    mouth_box,
-                    hair_box,
-                    full_box
-                ]
+            part_bboxes = []
+            for roi, indices in self.roi_indices.items():
+                if roi == "whole_face":
+                    bbox = [0, 0, self.image_size, self.image_size]
+                else:
+                    bbox = calc_face_part_bbox(landmarks_frame, indices, image_size=self.image_size)
+                part_bboxes.append(bbox)
 
-            bboxes_32.append(part_bboxes)
+            bboxes_16.append(part_bboxes)
 
-        frames_tensor = torch.stack(frames_tensor, dim=0)    # (32,C,H,W)
-        bboxes_32 = torch.tensor(bboxes_32, dtype=torch.float32)  # (32,6,4)
+        frames_tensor = torch.stack(frames_tensor, dim=0)  # (16, 3, 224, 224)
+        bboxes_16 = torch.tensor(bboxes_16, dtype=torch.float32)  # (16, 9, 4)
 
         return {
-            "frames": frames_tensor,     # (32,C,H,W)
-            "bboxes": bboxes_32,        # (32,6,4)
+            "frames": frames_tensor,     # (16, 3, 224, 224)
+            "bboxes": bboxes_16,        # (16, 9, 4)
             "label": torch.tensor(label, dtype=torch.long),
-            "video_path": video_path
+            "video_path": video_npy_path
         }

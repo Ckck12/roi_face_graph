@@ -3,7 +3,7 @@
 import torch
 from torch.utils.data import DataLoader, DistributedSampler
 from torchvision import transforms
-from .dataset import FFPlusDataset
+from src.data.dataset import FFPlusDataset  # 절대 import로 변경
 
 def create_dataloader(
     csv_path: str,
