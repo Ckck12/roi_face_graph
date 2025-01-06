@@ -1,8 +1,9 @@
 # src/models/roi_vit_extractor.py
 import torch
 import torch.nn as nn
-from .vit_backbone import SimpleViTBackbone
-from .roi_aggregation import compute_overlap_ratio
+from src.models.vit_backbone import SimpleViTBackbone
+from src.models.roi_aggregation import compute_overlap_ratio
+
 
 class ROIViTExtractor(nn.Module):
     """

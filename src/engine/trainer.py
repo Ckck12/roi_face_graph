@@ -3,7 +3,8 @@
 import torch
 import numpy as np
 from tqdm import tqdm
-from ..utils.metrics import compute_metrics
+from src.utils.metrics import compute_metrics  # (O) 절대 import
+
 
 def train_one_epoch(
     model,

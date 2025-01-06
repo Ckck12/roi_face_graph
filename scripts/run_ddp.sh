@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 
-CONFIG_FILE=${1:-"./configs/default.yaml"}
+CONFIG_FILE=${1:-"./config/config.yaml"}
 
-python -m torch.distributed.launch \
-    --nproc_per_node=2 \
+torchrun --nproc_per_node=8 \
     src/train.py \
     --config ${CONFIG_FILE} \
     --ddp

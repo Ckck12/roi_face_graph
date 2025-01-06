@@ -1,0 +1,16 @@
+{"time":"2025-01-04T19:21:52.510988985+09:00","level":"INFO","msg":"using version","core version":"0.18.7"}
+{"time":"2025-01-04T19:21:52.511009108+09:00","level":"INFO","msg":"created symlink","path":"/home/parkchan/face_roi_graph/wandb/run-20250104_192152-hfwaz8ek/logs/debug-core.log"}
+{"time":"2025-01-04T19:21:52.733894795+09:00","level":"INFO","msg":"created new stream","id":"hfwaz8ek"}
+{"time":"2025-01-04T19:21:52.73399019+09:00","level":"INFO","msg":"stream: started","id":"hfwaz8ek"}
+{"time":"2025-01-04T19:21:52.734018523+09:00","level":"INFO","msg":"sender: started","stream_id":"hfwaz8ek"}
+{"time":"2025-01-04T19:21:52.734019879+09:00","level":"INFO","msg":"writer: Do: started","stream_id":"hfwaz8ek"}
+{"time":"2025-01-04T19:21:52.734117325+09:00","level":"INFO","msg":"handler: started","stream_id":"hfwaz8ek"}
+{"time":"2025-01-04T19:21:53.066531326+09:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-01-04T19:23:01.34163525+09:00","level":"INFO","msg":"stream: closing","id":"hfwaz8ek"}
+{"time":"2025-01-04T19:23:01.341689316+09:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-01-04T19:23:01.342468344+09:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-01-04T19:23:03.802395667+09:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}
+{"time":"2025-01-04T19:23:04.059502195+09:00","level":"INFO","msg":"handler: closed","stream_id":"hfwaz8ek"}
+{"time":"2025-01-04T19:23:04.059577933+09:00","level":"INFO","msg":"sender: closed","stream_id":"hfwaz8ek"}
+{"time":"2025-01-04T19:23:04.059576251+09:00","level":"INFO","msg":"writer: Close: closed","stream_id":"hfwaz8ek"}
+{"time":"2025-01-04T19:23:04.059750639+09:00","level":"INFO","msg":"stream: closed","id":"hfwaz8ek"}

@@ -1,0 +1,11 @@
+{"time":"2025-01-04T19:21:52.472970708+09:00","level":"INFO","msg":"using version","core version":"0.18.7"}
+{"time":"2025-01-04T19:21:52.473022141+09:00","level":"INFO","msg":"created symlink","path":"/home/parkchan/face_roi_graph/wandb/run-20250104_192152-ve7onfgy/logs/debug-core.log"}
+{"time":"2025-01-04T19:21:52.689635941+09:00","level":"INFO","msg":"created new stream","id":"ve7onfgy"}
+{"time":"2025-01-04T19:21:52.689707726+09:00","level":"INFO","msg":"stream: started","id":"ve7onfgy"}
+{"time":"2025-01-04T19:21:52.689741101+09:00","level":"INFO","msg":"writer: Do: started","stream_id":"ve7onfgy"}
+{"time":"2025-01-04T19:21:52.689762646+09:00","level":"INFO","msg":"sender: started","stream_id":"ve7onfgy"}
+{"time":"2025-01-04T19:21:52.689810752+09:00","level":"INFO","msg":"handler: started","stream_id":"ve7onfgy"}
+{"time":"2025-01-04T19:21:53.069701077+09:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-01-04T19:23:01.349024477+09:00","level":"INFO","msg":"stream: closing","id":"ve7onfgy"}
+{"time":"2025-01-04T19:23:01.350015403+09:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-01-04T19:23:01.351053967+09:00","level":"INFO","msg":"Stopped system monitor"}

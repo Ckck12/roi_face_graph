@@ -6,10 +6,12 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from .data import create_dataloader
-from .engine import train_one_epoch, evaluate
-from .models.final_model import FullPipelineModel
-from .utils import set_seed, get_device, init_wandb, finish_wandb
+from data import create_dataloader
+from src.engine import train_one_epoch, evaluate
+from src.models.final_model import FullPipelineModel
+from src.utils import set_seed, get_device, init_wandb, finish_wandb
+
+
 
 def main_train(config):
     seed = config.get("seed", 42)

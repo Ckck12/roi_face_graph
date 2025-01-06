@@ -1,0 +1,12 @@
+{"time":"2025-01-04T19:21:52.678266292+09:00","level":"INFO","msg":"using version","core version":"0.18.7"}
+{"time":"2025-01-04T19:21:52.678314109+09:00","level":"INFO","msg":"created symlink","path":"/home/parkchan/face_roi_graph/wandb/run-20250104_192152-v8gtr4dw/logs/debug-core.log"}
+{"time":"2025-01-04T19:21:52.894028751+09:00","level":"INFO","msg":"created new stream","id":"v8gtr4dw"}
+{"time":"2025-01-04T19:21:52.894092811+09:00","level":"INFO","msg":"stream: started","id":"v8gtr4dw"}
+{"time":"2025-01-04T19:21:52.894167809+09:00","level":"INFO","msg":"handler: started","stream_id":"v8gtr4dw"}
+{"time":"2025-01-04T19:21:52.894225675+09:00","level":"INFO","msg":"writer: Do: started","stream_id":"v8gtr4dw"}
+{"time":"2025-01-04T19:21:52.894271662+09:00","level":"INFO","msg":"sender: started","stream_id":"v8gtr4dw"}
+{"time":"2025-01-04T19:21:53.245064899+09:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-01-04T19:23:01.357045802+09:00","level":"INFO","msg":"stream: closing","id":"v8gtr4dw"}
+{"time":"2025-01-04T19:23:01.357082915+09:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-01-04T19:23:01.358052172+09:00","level":"INFO","msg":"Stopped system monitor"}
+{"time":"2025-01-04T19:23:04.076271833+09:00","level":"INFO","msg":"fileTransfer: Close: file transfer manager closed"}

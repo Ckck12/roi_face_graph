@@ -1,0 +1,11 @@
+{"time":"2025-01-04T18:38:53.346283766+09:00","level":"INFO","msg":"using version","core version":"0.18.7"}
+{"time":"2025-01-04T18:38:53.346303954+09:00","level":"INFO","msg":"created symlink","path":"/home/parkchan/face_roi_graph/wandb/run-20250104_183853-fsn7270f/logs/debug-core.log"}
+{"time":"2025-01-04T18:38:53.465867558+09:00","level":"INFO","msg":"created new stream","id":"fsn7270f"}
+{"time":"2025-01-04T18:38:53.465927942+09:00","level":"INFO","msg":"stream: started","id":"fsn7270f"}
+{"time":"2025-01-04T18:38:53.466019365+09:00","level":"INFO","msg":"handler: started","stream_id":"fsn7270f"}
+{"time":"2025-01-04T18:38:53.466161856+09:00","level":"INFO","msg":"writer: Do: started","stream_id":"fsn7270f"}
+{"time":"2025-01-04T18:38:53.466168148+09:00","level":"INFO","msg":"sender: started","stream_id":"fsn7270f"}
+{"time":"2025-01-04T18:38:53.838298438+09:00","level":"INFO","msg":"Starting system monitor"}
+{"time":"2025-01-04T19:20:41.764422532+09:00","level":"INFO","msg":"stream: closing","id":"fsn7270f"}
+{"time":"2025-01-04T19:20:41.765442335+09:00","level":"INFO","msg":"Stopping system monitor"}
+{"time":"2025-01-04T19:20:41.770803888+09:00","level":"INFO","msg":"Stopped system monitor"}

@@ -1,0 +1,63 @@
+_wandb:
+    value:
+        cli_version: 0.18.7
+        m: []
+        python_version: 3.9.20
+        t:
+            "1":
+                - 1
+                - 5
+                - 41
+                - 53
+                - 55
+                - 77
+            "2":
+                - 1
+                - 5
+                - 41
+                - 53
+                - 55
+                - 77
+            "3":
+                - 13
+                - 16
+                - 23
+                - 55
+            "4": 3.9.20
+            "5": 0.18.7
+            "8":
+                - 5
+            "12": 0.18.7
+            "13": linux-x86_64
+batch_size:
+    value: 4
+csv_file:
+    value: ./ff++_c23.csv
+dist_backend:
+    value: nccl
+dist_url:
+    value: tcp://127.0.0.1:23456
+epochs:
+    value: 5
+lr:
+    value: 0.0001
+model:
+    value:
+        hidden_dim: 768
+        image_size: 224
+        num_classes: 2
+        patch_size: 16
+num_workers:
+    value: 2
+seed:
+    value: 42
+shape_predictor_path:
+    value: ./shape_predictor_68_face_landmarks.dat
+wandb_entity:
+    value: ""
+wandb_project:
+    value: FacePartProject
+wandb_run_name:
+    value: landmark_exp
+world_size:
+    value: 1

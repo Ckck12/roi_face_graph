@@ -1,0 +1,27 @@
+/home/parkchan/.conda/envs/facegraph/lib/python3.9/site-packages/torch/nn/modules/transformer.py:307: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.self_attn.batch_first was not True(use batch_first for better inference performance)
+  warnings.warn(f"enable_nested_tensor is True, but self.use_nested_tensor is False because {why_not_sparsity_fast_path}")
+Train Epoch 1:   1%|▏                                      | 5/900 [41:41<124:23:26, 500.34s/it]
+Traceback (most recent call last):
+  File "/home/parkchan/face_roi_graph/src/train.py", line 91, in <module>
+    main()
+  File "/home/parkchan/face_roi_graph/src/train.py", line 88, in main
+    main_train(config)
+  File "/home/parkchan/face_roi_graph/src/train.py", line 61, in main_train
+    train_loss, train_acc, train_auc = train_one_epoch(
+  File "/home/parkchan/face_roi_graph/src/engine/trainer.py", line 29, in train_one_epoch
+    outputs = model(frames, bboxes)       # (B, num_classes=2)
+  File "/home/parkchan/.conda/envs/facegraph/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/parkchan/.conda/envs/facegraph/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/parkchan/face_roi_graph/src/models/final_model.py", line 36, in forward
+    node_feats = self.roi_extractor(frame_t, boxes_t)
+  File "/home/parkchan/.conda/envs/facegraph/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/parkchan/.conda/envs/facegraph/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/parkchan/face_roi_graph/src/models/roi_vit_extractor.py", line 57, in forward
+    ratio = compute_overlap_ratio(bbox, pc)
+  File "/home/parkchan/face_roi_graph/src/models/roi_aggregation.py", line 15, in compute_overlap_ratio
+    w = max(0, x2 - x1)
+KeyboardInterrupt

@@ -1,0 +1,53 @@
+/home/parkchan/.conda/envs/facegraph/lib/python3.9/site-packages/torch/nn/modules/transformer.py:307: UserWarning: enable_nested_tensor is True, but self.use_nested_tensor is False because encoder_layer.self_attn.batch_first was not True(use batch_first for better inference performance)
+  warnings.warn(f"enable_nested_tensor is True, but self.use_nested_tensor is False because {why_not_sparsity_fast_path}")
+Train Epoch 1:   0%|                                                    | 0/900 [00:59<?, ?it/s]
+Traceback (most recent call last):
+  File "/home/parkchan/face_roi_graph/src/train.py", line 91, in <module>
+    main()
+  File "/home/parkchan/face_roi_graph/src/train.py", line 88, in main
+    main_train(config)
+  File "/home/parkchan/face_roi_graph/src/train.py", line 61, in main_train
+    train_loss, train_acc, train_auc = train_one_epoch(
+  File "/home/parkchan/face_roi_graph/src/engine/trainer.py", line 29, in train_one_epoch
+    outputs = model(frames, bboxes)       # (B, num_classes=2)
+  File "/home/parkchan/.conda/envs/facegraph/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/parkchan/.conda/envs/facegraph/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/parkchan/face_roi_graph/src/models/final_model.py", line 36, in forward
+    node_feats = self.roi_extractor(frame_t, boxes_t)
+  File "/home/parkchan/.conda/envs/facegraph/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/parkchan/.conda/envs/facegraph/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/parkchan/face_roi_graph/src/models/roi_vit_extractor.py", line 41, in forward
+    out_vit = self.vit(frame_in)   # (1,1+num_patches,hidden_dim)
+  File "/home/parkchan/.conda/envs/facegraph/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/parkchan/.conda/envs/facegraph/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/parkchan/face_roi_graph/src/models/vit_backbone.py", line 31, in forward
+    x = self.transformer(x)
+  File "/home/parkchan/.conda/envs/facegraph/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/parkchan/.conda/envs/facegraph/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/parkchan/.conda/envs/facegraph/lib/python3.9/site-packages/torch/nn/modules/transformer.py", line 416, in forward
+    output = mod(output, src_mask=mask, is_causal=is_causal, src_key_padding_mask=src_key_padding_mask_for_layers)
+  File "/home/parkchan/.conda/envs/facegraph/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/parkchan/.conda/envs/facegraph/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/parkchan/.conda/envs/facegraph/lib/python3.9/site-packages/torch/nn/modules/transformer.py", line 749, in forward
+    x = self.norm1(x + self._sa_block(x, src_mask, src_key_padding_mask, is_causal=is_causal))
+  File "/home/parkchan/.conda/envs/facegraph/lib/python3.9/site-packages/torch/nn/modules/transformer.py", line 757, in _sa_block
+    x = self.self_attn(x, x, x,
+  File "/home/parkchan/.conda/envs/facegraph/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1553, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+  File "/home/parkchan/.conda/envs/facegraph/lib/python3.9/site-packages/torch/nn/modules/module.py", line 1562, in _call_impl
+    return forward_call(*args, **kwargs)
+  File "/home/parkchan/.conda/envs/facegraph/lib/python3.9/site-packages/torch/nn/modules/activation.py", line 1275, in forward
+    attn_output, attn_output_weights = F.multi_head_attention_forward(
+  File "/home/parkchan/.conda/envs/facegraph/lib/python3.9/site-packages/torch/nn/functional.py", line 5563, in multi_head_attention_forward
+    attn_output = linear(attn_output, out_proj_weight, out_proj_bias)
+torch.OutOfMemoryError: CUDA out of memory. Tried to allocate 2.00 MiB. GPU 0 has a total capacity of 23.69 GiB of which 9.75 MiB is free. Process 11073 has 15.22 GiB memory in use. Process 34435 has 1.12 GiB memory in use. Including non-PyTorch memory, this process has 1.51 GiB memory in use. Process 34434 has 1.04 GiB memory in use. Process 34430 has 1.50 GiB memory in use. Process 34432 has 819.00 MiB memory in use. Process 34431 has 903.00 MiB memory in use. Process 34429 has 819.00 MiB memory in use. Process 34436 has 819.00 MiB memory in use. Of the allocated memory 151.39 MiB is allocated by PyTorch, and 14.61 MiB is reserved by PyTorch but unallocated. If reserved but unallocated memory is large try setting PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True to avoid fragmentation.  See documentation for Memory Management  (https://pytorch.org/docs/stable/notes/cuda.html#environment-variables)

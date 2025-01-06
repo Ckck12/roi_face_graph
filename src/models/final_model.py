@@ -2,8 +2,8 @@
 
 import torch
 import torch.nn as nn
-from .roi_vit_extractor import ROIViTExtractor
-from .gat_classifier import FacePartGAT
+from src.models.roi_vit_extractor import ROIViTExtractor
+from src.models.gat_classifier import FacePartGAT
 
 class FullPipelineModel(nn.Module):
     """
