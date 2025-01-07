@@ -14,11 +14,13 @@ csv_file: "./ff++_c23_landmark.csv"
 shape_predictor_path: "./shape_predictor_68_face_landmarks.dat"
 
 # Model config
+# config/config.yaml
 model:
   image_size: 224
-  patch_size: 16
-  hidden_dim: 768
+  patch_size: 32
+  hidden_dim: 512
   num_classes: 2
+
 
 # WandB
 wandb_project: "FacePartProject"

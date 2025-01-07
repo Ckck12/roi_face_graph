@@ -7,7 +7,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from src.data import create_dataloader
+from src.data.dataloader import create_dataloader
 from src.engine import train_one_epoch, evaluate
 from src.models.final_model import FullPipelineModel
 from src.utils import set_seed, get_device, init_wandb, finish_wandb
@@ -40,7 +40,6 @@ def main_train(config):
     # DataLoader 설정
     train_loader = create_dataloader(
         csv_path=config["csv_file"],
-        shape_predictor_path=config["shape_predictor_path"],
         dataset_type="train",
         batch_size=config["batch_size"],
         shuffle=not config.get("ddp", False),  # DDP일 때는 DistributedSampler에서 shuffle 처리
@@ -52,7 +51,6 @@ def main_train(config):
     )
     val_loader = create_dataloader(
         csv_path=config["csv_file"],
-        shape_predictor_path=config["shape_predictor_path"],
         dataset_type="val",
         batch_size=config["batch_size"],
         shuffle=False,
@@ -64,6 +62,8 @@ def main_train(config):
     # 모델 설정
     m_cfg = config["model"]
     model = FullPipelineModel(
+        model_name="ViT-B/32",
+        device=device,
         image_size=m_cfg["image_size"],
         patch_size=m_cfg["patch_size"],
         hidden_dim=m_cfg["hidden_dim"],
@@ -104,7 +104,7 @@ def main_train(config):
 
             if val_auc > best_auc:
                 best_auc = val_auc
-                torch.save(model.state_dict(), "best_model.pt")
+                torch.save(model.module.state_dict(), "best_model.pt")  # DDP 래핑된 모델에서는 model.module 사용
                 print("[안내] 새로운 최고 AUC 갱신! 모델 저장 완료.")
 
     # 프로세스 그룹 정리

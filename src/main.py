@@ -6,7 +6,7 @@ import sys
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--config", type=str, default="./configs/default.yaml")
+    parser.add_argument("--config", type=str, default="./config/config.yaml")
     parser.add_argument("--mode", type=str, default="train", help="train or eval")
     args = parser.parse_args()
 
