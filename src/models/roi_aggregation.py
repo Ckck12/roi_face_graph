@@ -2,27 +2,41 @@
 
 import torch
 
-def compute_overlap_ratio(bbox, patch_box):
+def compute_overlap_ratio(bboxes, patch_boxes):
     """
-    목적:
-    - bbox(ROI)와 patch_box(이미지의 패치)가 얼마나 겹치는지를 계산
-    데이터 shape:
-    - bbox, patch_box: (x1, y1, x2, y2)
-    반환:
-    - overlap / area(patch_box), float
+    여러 개의 바운딩 박스와 패치 박스 간의 겹침 비율을 계산합니다.
+    
+    Args:
+        bboxes (Tensor): (N, 4) - N개의 ROI 바운딩 박스
+        patch_boxes (Tensor): (num_patches, 4) - 패치의 바운딩 박스
+    
+    Returns:
+        Tensor: (N, num_patches) - 각 ROI와 패치 간의 겹침 비율
     """
-    # 입력으로 들어오는 두 박스의 x1, y1, x2, y2 중 겹치는 부분의 좌표 계산
-    x1 = max(bbox[0], patch_box[0])
-    y1 = max(bbox[1], patch_box[1])
-    x2 = min(bbox[2], patch_box[2])
-    y2 = min(bbox[3], patch_box[3])
-
-    w = max(0, x2 - x1)
-    h = max(0, y2 - y1)
-    overlap = w * h  # 실제 겹치는 면적
-
-    patch_area = (patch_box[2] - patch_box[0]) * (patch_box[3] - patch_box[1])
-    if patch_area <= 0:
-        return 0.0
-    # 전체 패치 면적 대비 겹치는 비율을 반환
-    return overlap / patch_area
+    N = bboxes.size(0)
+    num_patches = patch_boxes.size(0)
+    
+    # Expand bboxes and patch_boxes for broadcasting
+    bboxes_exp = bboxes.unsqueeze(1).expand(-1, num_patches, -1)  # (N, num_patches, 4)
+    patch_boxes_exp = patch_boxes.unsqueeze(0).expand(N, -1, -1)  # (N, num_patches, 4)
+    
+    # 교집합 좌표 계산
+    x1_i = torch.max(bboxes_exp[:, :, 0], patch_boxes_exp[:, :, 0])
+    y1_i = torch.max(bboxes_exp[:, :, 1], patch_boxes_exp[:, :, 1])
+    x2_i = torch.min(bboxes_exp[:, :, 2], patch_boxes_exp[:, :, 2])
+    y2_i = torch.min(bboxes_exp[:, :, 3], patch_boxes_exp[:, :, 3])
+    
+    # 교집합 면적 계산
+    inter_width = (x2_i - x1_i).clamp(min=0)
+    inter_height = (y2_i - y1_i).clamp(min=0)
+    inter_area = inter_width * inter_height  # (N, num_patches)
+    
+    # 패치 면적 계산
+    patch_area = (patch_boxes[:, 2] - patch_boxes[:, 0]) * (patch_boxes[:, 3] - patch_boxes[:, 1])  # (num_patches,)
+    patch_area = patch_area.unsqueeze(0).expand(N, -1)  # (N, num_patches)
+    
+    # 겹침 비율 계산
+    overlap_ratios = inter_area / patch_area  # (N, num_patches)
+    overlap_ratios = overlap_ratios.clamp(max=1.0)  # 1을 초과하지 않도록 클램핑
+    
+    return overlap_ratios
