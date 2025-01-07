@@ -9,16 +9,16 @@ world_size: 7
 dist_backend: "nccl"
 dist_url: "env://"
 
-# CSV, dlib 모델 경로
+# CSV 모델 경로
 csv_file: "./ff++_c23_landmark.csv"
-shape_predictor_path: "./shape_predictor_68_face_landmarks.dat"
+
 
 # Model config
 # config/config.yaml
 model:
   image_size: 224
   patch_size: 32
-  hidden_dim: 512
+  hidden_dim: 768
   num_classes: 2
 
 

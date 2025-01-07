@@ -15,8 +15,9 @@ class CLIPViTBackbone(nn.Module):
     """
     def __init__(self, model_name="ViT-B/32", device='cuda'):
         super(CLIPViTBackbone, self).__init__()
+        # 모델 로드는 clip 라이브러리를 사용하며, 사전 학습된 비전 트랜스포머 활용
         self.model, _ = clip.load(model_name, device=device, jit=False)
-        self.model.eval()  # 백본은 고정
+        self.model.eval()  # 백본은 추론 모드로 고정 (학습하지 않음)
         for param in self.model.parameters():
             param.requires_grad = False
         
@@ -35,6 +36,7 @@ class CLIPViTBackbone(nn.Module):
             cls_tokens: (B, d_v)
             patch_tokens: (B, num_patches, d_v)
         """
+        # 입력 이미지(batch)를 CLIP의 비전 모듈을 통해 임베딩 추출
         with torch.no_grad():
             # CLIP 모델의 visual module을 통해 이미지 임베딩을 추출
             visual = self.model.visual
@@ -46,8 +48,7 @@ class CLIPViTBackbone(nn.Module):
             
             x = visual.transformer(x)  # (B, 1 + num_patches, embed_dim)
             
-            cls_tokens = x[:, 0, :]    # (B, embed_dim)
-            patch_tokens = x[:, 1:, :]  # (B, num_patches, embed_dim)
+            cls_tokens = x[:, 0, :]     # 클래스 토큰 (글로벌 특징)
+            patch_tokens = x[:, 1:, :]  # 패치 토큰 (로컬 특징)
             
-        print(cls_tokens.shape, patch_tokens.shape)
         return cls_tokens, patch_tokens

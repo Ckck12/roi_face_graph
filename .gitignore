@@ -1,2 +1,7 @@
 shape_predictor_68_face_landmarks.dat/
 wandb/
+*.pt
+*.pth
+*.pt/
+*.pth/
+best_model.pt
