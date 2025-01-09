@@ -8,8 +8,9 @@ from .final_model import FullPipelineModel
 
 __all__ = [
     "CLIPViTBackbone",
-    "compute_overlap_ratios",
+    "compute_overlap_ratio",
     "ROIViTExtractor",
+    "ModifiedMultiheadAttention",
     "FacePartGAT",
     "FullPipelineModel"
 ]

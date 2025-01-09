@@ -16,6 +16,8 @@ class CLIPViTBackbone(nn.Module):
     """
     def __init__(self, model_name="ViT-B/32", device='cuda'):
         super(CLIPViTBackbone, self).__init__()
+        self.device = device  # 이 줄을 추가
+        
         # CLIP 모델 로드
         self.model, _ = clip.load(model_name, device=device, jit=False)
         self.model.eval()  # 백본은 추론 모드로 고정 (학습하지 않음)
