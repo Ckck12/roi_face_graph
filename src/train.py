@@ -13,6 +13,7 @@ from src.models.final_model import FullPipelineModel
 from src.models.final_model_temporal_gat import FullTemporalGraphModel  # 추가
 from src.utils import set_seed, get_device, init_wandb, finish_wandb
 
+
 def main_train(config):
     # DDP 설정 여부 확인
     if config.get("ddp", False):
@@ -73,7 +74,7 @@ def main_train(config):
 
     # DDP로 모델 래핑
     if config.get("ddp", False):
-        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank])
+        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank], find_unused_parameters=True)
 
     # 손실 함수 및 옵티마이저 설정
     criterion = nn.CrossEntropyLoss()

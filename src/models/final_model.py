@@ -5,8 +5,6 @@ import torch.nn as nn
 from src.models.roi_vit_extractor import ROIViTExtractor
 from src.models.gat_classifier import FacePartGAT
 
-# src/models/final_model.py
-
 class FullPipelineModel(nn.Module):
     def __init__(self, model_name="ViT-B/32", device='cuda', image_size=224, patch_size=32, hidden_dim=768, num_classes=2):
         super(FullPipelineModel, self).__init__()
@@ -43,7 +41,7 @@ class FullPipelineModel(nn.Module):
                 frame_emb_list.append(frame_emb)
 
             # 모든 프레임 임베딩을 평균 내어 하나의 비디오 임베딩 생성
-            # 32 프레임의 임베딩을 평균하여 비디오 임베딩 생성
+            # 16 프레임의 임베딩을 평균하여 비디오 임베딩 생성
             video_emb = torch.stack(frame_emb_list, dim=0).mean(dim=0)  # (768)
 
             # 분류

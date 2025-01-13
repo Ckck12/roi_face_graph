@@ -47,5 +47,4 @@ def compute_overlap_ratio(bboxes, patch_boxes):
         row_sum = overlap_ratios[i].sum()
         if row_sum > 0:
             overlap_ratios[i] /= row_sum
-    print(f"overlap_ratios: {overlap_ratios}")
     return overlap_ratios
