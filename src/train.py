@@ -10,6 +10,7 @@ import torch.optim as optim
 from src.data.dataloader import create_dataloader
 from src.engine import train_one_epoch, evaluate
 from src.models.final_model import FullPipelineModel
+from src.models.final_model_temporal_gat import FullTemporalGraphModel  # 추가
 from src.utils import set_seed, get_device, init_wandb, finish_wandb
 
 def main_train(config):
@@ -61,7 +62,7 @@ def main_train(config):
 
     # 모델 설정
     m_cfg = config["model"]
-    model = FullPipelineModel(
+    model = FullTemporalGraphModel(
         model_name="ViT-B/32",
         device=device,
         image_size=m_cfg["image_size"],

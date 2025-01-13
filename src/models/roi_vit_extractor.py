@@ -1,17 +1,16 @@
+# src/models/roi_vit_extractor.py
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from src.models.vit_backbone import CLIPViTBackbone
-from src.models.roi_aggregation import compute_overlap_ratio
 import math
 
-###############################################
-# 1) 수정된 MultiheadAttention
-###############################################
+from src.models.vit_backbone import CLIPViTBackbone
+from src.models.roi_aggregation import compute_overlap_ratio
+
 class CustomMultiheadAttention(nn.Module):
     """
-    Custom MultiheadAttention that adds attn_bias to the attention scores before softmax.
-    Uses torch.einsum for clear tensor operations.
+    기존과 동일: Overlap Bias(= attn_bias)를 Self-Attention 스코어에 추가하는 MultiheadAttention 구현.
     """
     def __init__(self, embed_dim, num_heads, dropout=0.0):
         super().__init__()
@@ -21,7 +20,7 @@ class CustomMultiheadAttention(nn.Module):
         self.head_dim = embed_dim // num_heads
         assert self.head_dim * num_heads == embed_dim, "embed_dim must be divisible by num_heads"
 
-        # Define projection layers
+        # Projection layers
         self.q_proj = nn.Linear(embed_dim, embed_dim)
         self.k_proj = nn.Linear(embed_dim, embed_dim)
         self.v_proj = nn.Linear(embed_dim, embed_dim)
@@ -29,72 +28,55 @@ class CustomMultiheadAttention(nn.Module):
 
     def forward(self, query, key, value, attn_bias=None):
         """
-        Args:
-            query: (L, N, E)
-            key: (S, N, E)
-            value: (S, N, E)
-            attn_bias: (L, S) tensor  (optional)
-
-        Returns:
-            attn_output: (L, N, E)
-            attn_weights: (num_heads * N, L, S)
+        query, key, value: (L, N, E)
+        attn_bias: (L, L) 형태(= (H'W'+1, H'W'+1))를 예상.
         """
-        # Q, K, V shape: (L, N, E) or (S, N, E)
-        # L, S: sequence lengths (ex: 50 each if self-attention)
-        # N: batch size
-        # E: embed_dim
         Q = self.q_proj(query)  # (L, N, E)
-        K = self.k_proj(key)    # (S, N, E)
-        V = self.v_proj(value)  # (S, N, E)
+        K = self.k_proj(key)    # (L, N, E)
+        V = self.v_proj(value)  # (L, N, E)
 
-        L, N, E = Q.shape
-        S = K.shape[0]
+        L, N, E = Q.size()
 
-        # Reshape for multi-head: -> (L, N, num_heads, head_dim)
-        Q = Q.view(L, N, self.num_heads, self.head_dim)
-        K = K.view(S, N, self.num_heads, self.head_dim)
-        V = V.view(S, N, self.num_heads, self.head_dim)
+        # Reshape for multi-head
+        Q = Q.view(L, N, self.num_heads, self.head_dim).permute(2,1,0,3)  # (h, N, L, d)
+        K = K.view(L, N, self.num_heads, self.head_dim).permute(2,1,0,3)  # (h, N, L, d)
+        V = V.view(L, N, self.num_heads, self.head_dim).permute(2,1,0,3)  # (h, N, L, d)
 
-        # Permute to put head_dim last for Q, but for K we want head_dim at -2
-        # Common approach:
-        #   Q: (num_heads, N, L, head_dim) = 'hnld'
-        #   K: (num_heads, N, head_dim, S) = 'hnd s'
-        #   V: (num_heads, N, S, head_dim) = 'hns d'
-        # So that we do: 'hnld,hnds->hnls' for Q*K
-        Q = Q.permute(2, 1, 0, 3).contiguous()  # (h, N, L, d)
-        K = K.permute(2, 1, 3, 0).contiguous()  # (h, N, d, S)
-        V = V.permute(2, 1, 0, 3).contiguous()  # (h, N, S, d)
-
-        # Compute QK^T: attn_scores shape = (h, N, L, S)
-        attn_scores = torch.einsum('hnld,hnds->hnls', Q, K) / math.sqrt(self.head_dim)
+        # QK^T => (h, N, L, L)
+        # 여기서 K를 transpose(-2,-1) or einsum 적절히 사용
+        # 아래 einsum: 'hnld,hnad->hnla', a가 L
+        attn_scores = torch.einsum('hnld,hnad->hnla', Q, K) / math.sqrt(self.head_dim)
+        # attn_scores: (h, N, L, L)
 
         if attn_bias is not None:
-            # attn_bias: (L, S) => expand to (h, N, L, S)
-            attn_bias = attn_bias.unsqueeze(0).unsqueeze(1)  # (1,1,L,S)
-            attn_bias = attn_bias.expand(self.num_heads, N, L, S)
-            attn_scores = attn_scores + attn_bias  # (h, N, L, S)
+            # attn_bias: (L,L) -> 확장 필요: (h, N, L, L)
+            attn_bias = attn_bias.unsqueeze(0).unsqueeze(1)  # (1,1,L,L)
+            attn_bias = attn_bias.expand(self.num_heads, N, L, L)
+            attn_scores = attn_scores + attn_bias
+            # print(f"attn_bias: {attn_bias}")
+            # print(f"attn_scores {attn_scores}")
 
-        # softmax over last dim (S)
-        attn_weights = F.softmax(attn_scores, dim=-1)  # (h, N, L, S)
+        attn_weights = F.softmax(attn_scores, dim=-1)  # (h, N, L, L)
         attn_weights = F.dropout(attn_weights, p=self.dropout, training=self.training)
 
-        # Multiply by V => attn_output shape = (h, N, L, d)
-        attn_output = torch.einsum('hnls,hnsd->hnld', attn_weights, V)
-        # Rearrange back to (L, N, E)
-        attn_output = attn_output.permute(2, 1, 0, 3).contiguous()  # (L, N, h, d)
-        attn_output = attn_output.view(L, N, self.embed_dim)         # (L, N, E)
+        # attn_output => (h, N, L, d)
+        attn_output = torch.einsum('hnla,hnad->hnld', attn_weights, V)
+        # => (h,N,L,d)
 
-        # final linear
+        # 다시 (L,N,E)로
+        attn_output = attn_output.permute(2,1,0,3).contiguous()  # (L,N,h,d)
+        attn_output = attn_output.view(L, N, self.embed_dim)      # (L,N,E)
+
         attn_output = self.out_proj(attn_output)  # (L, N, E)
+        # attn_weights => (h*N, L, L) 등으로 변형 가능
 
-        # Flatten attn_weights
-        attn_weights = attn_weights.view(self.num_heads * N, L, S)  # (h*N, L, S)
         return attn_output, attn_weights
 
-###############################################
-# 2) ResidualAttentionBlock (동일)
-###############################################
+
 class CustomResidualAttentionBlock(nn.Module):
+    """
+    CLIP의 ResidualAttentionBlock을 수정하여, attn_bias=(L,L)을 입력받아 Self-Attention에 추가.
+    """
     def __init__(self, block, embed_dim, num_heads, dropout=0.0):
         super().__init__()
         self.ln_1 = block.ln_1
@@ -105,84 +87,138 @@ class CustomResidualAttentionBlock(nn.Module):
     def forward(self, x, attn_bias=None):
         """
         x: (L, N, E)
+        attn_bias: (L, L)
         """
         x_norm = self.ln_1(x)
         attn_output, _ = self.attn(x_norm, x_norm, x_norm, attn_bias=attn_bias)
         x = x + attn_output
+
         x_norm = self.ln_2(x)
         mlp_output = self.mlp(x_norm)
         x = x + mlp_output
         return x
 
-###############################################
-# 3) ROIViTExtractor (나머지 동일)
-###############################################
+
 class ROIViTExtractor(nn.Module):
+    """
+    논문 방식으로 'ROI마다 별도의 Self-Attention'을 수행하여,
+    ROI별 <CLS> 토큰 임베딩을 직접 얻는 구조.
+
+    - frame: (C,H,W)
+    - bboxes: (N,4)
+    - Return: (N+1, hidden_dim)  # N개 ROI + whole_face(글로벌)
+    """
     def __init__(self, model_name="ViT-B/32", device='cuda', image_size=224, patch_size=32, hidden_dim=768):
         super().__init__()
+        # (1) CLIP ViT 백본
+        from src.models.vit_backbone import CLIPViTBackbone
         self.vit_backbone = CLIPViTBackbone(model_name=model_name, device=device)
+
         self.image_size = image_size
         self.patch_size = patch_size
         self.hidden_dim = hidden_dim
+        self.device = device
 
-        transformer = self.vit_backbone.model.visual.transformer
+        # (2) CLIP 내부 Transformer blocks -> CustomResidualAttentionBlock 교체
+        visual = self.vit_backbone.model.visual
+        transformer = visual.transformer
         custom_resblocks = nn.ModuleList([
             CustomResidualAttentionBlock(block, transformer.width, block.attn.num_heads, block.attn.dropout)
             for block in transformer.resblocks
         ])
         transformer.resblocks = custom_resblocks
 
+        # (3) 미리 conv1 + relu + flatten => patch 임베딩
+        #     => 논문은 ROI마다 다시 ViT 사용? or conv1까지만 공통 사용?
+        #     여기서는 "conv1 결과"를 공통 추출해 patch_tokens로 씀.
+
     def _get_patch_coords(self):
         coords = []
-        num_side = self.image_size // self.patch_size  # 224//32=7
+        num_side = self.image_size // self.patch_size
         for r in range(num_side):
             for c in range(num_side):
                 x1 = c * self.patch_size
                 y1 = r * self.patch_size
                 x2 = x1 + self.patch_size
                 y2 = y1 + self.patch_size
-                coords.append([x1, y1, x2, y2])
-        device_ = next(self.vit_backbone.parameters()).device
-        return torch.tensor(coords, dtype=torch.float32, device=device_)
+                coords.append([x1,y1,x2,y2])
+        coords = torch.tensor(coords, dtype=torch.float32, device=self.device)
+        return coords
 
-    def _build_attention_bias(self, Mi):
-        N, num_patches = Mi.shape
-        patch_bias = Mi.sum(dim=0)  # (num_patches,)
-        patch_bias = patch_bias / (patch_bias.max(dim=0, keepdim=True)[0] + 1e-6)
-        L = 1 + num_patches
-        S = 1 + num_patches
-        attn_bias = torch.zeros(L, S, device=Mi.device)
-        attn_bias[0, 1:] = patch_bias
-        return attn_bias
+    def _expand_mask(self, mask_1d):
+        """
+        mask_1d: (num_patches,) => 2D 확장 (num_patches+1, num_patches+1)
+        (논문) M_i ∈ R^(H'W') => \tilde{M}_i ∈ R^((H'W'+1)x(H'W'+1))
+        """
+        L = mask_1d.shape[0] + 1
+        attn_bias = torch.zeros(L, L, device=mask_1d.device)
+        # <CLS> -> patch 구간을 mask_1d로
+        attn_bias[1:,1:] = torch.diag(mask_1d)  # diag로 처리 (혹은 broadcasting)
+        # 논문에서 "Bias"라고 하면, QK^T + bias 형태
+        return attn_bias  # (L,L)
+
+    def _build_single_roi_cls(self, patch_tokens, mask_1d):
+        """
+        ROI i에 대해:
+          - <CLS> + patch_tokens
+          - attn_bias = expand(mask_1d)
+          - Transformer -> 최종 <CLS> out
+        """
+        L_pt = patch_tokens.size(1)  # num_patches
+        N_bt = patch_tokens.size(0)  # batch=1(항상)
+        E = patch_tokens.size(2)     # embed_dim
+
+        # (1) shape = (1, 1+num_patches, E)
+        visual = self.vit_backbone.model.visual
+        cls_token = visual.class_embedding.unsqueeze(0).expand(N_bt, -1, -1)  # (1,1,E)
+        x = torch.cat((cls_token, patch_tokens), dim=1)  # (1, 1+patches, E)
+
+        # (2) attn_bias => (1+patches, 1+patches)
+        attn_2d = self._expand_mask(mask_1d)  # (L,L)
+
+        # (3) L->(1+patches), N->1, E->embed_dim => x.transpose(0,1)
+        x = x.transpose(0,1)  # => (1+patches,1,E)
+
+        for blk in visual.transformer.resblocks:
+            x = blk(x, attn_bias=attn_2d)  # (L,N,E)
+
+        x = x.transpose(0,1)  # (1,L,E)
+        cls_out = x[:,0,:].squeeze(0)  # => (E,) ROI 임베딩
+        return cls_out  # shape=(embed_dim,)
 
     def forward(self, frame, bboxes):
+        """
+        frame: (C,H,W)
+        bboxes: (N,4), 마지막 하나는 whole_face라고 가정
+        => Return: (N+1, embed_dim)
+        """
+        # (1) 먼저 "conv1 -> relu -> flatten"까지만 공통 추출
+        # => patch_tokens: (1, num_patches, embed_dim)
         visual = self.vit_backbone.model.visual
+        x_in = frame.unsqueeze(0).to(self.device)     # (1,C,H,W)
+        feat = visual.conv1(x_in)                    # (1,embed_dim,H/32,W/32)
+        feat = F.relu(feat)
+        feat = feat.flatten(2).transpose(1,2)        # (1,num_patches,embed_dim)
 
-        # (C,H,W)->(1,C,H,W)
-        x = frame.unsqueeze(0).to(next(self.vit_backbone.parameters()).device)
-        x = visual.conv1(x)   # (1, embed_dim, H/32, W/32)
-        x = F.relu(x)
-        x = x.flatten(2).transpose(1,2)  # (1, num_patches, embed_dim)
+        # (2) Patch 좌표
+        patch_coords = self._get_patch_coords()       # (num_patches,4)
+        num_patches = patch_coords.size(0)            # = H'W'
 
-        cls_token = visual.class_embedding.unsqueeze(0).expand(x.size(0), -1, -1)  # (1,1,embed_dim)
-        x = torch.cat((cls_token, x), dim=1)  # (1, 1+num_patches, embed_dim)
+        # (3) Overlap Ratio => shape=(N, num_patches)
+        # bboxes shape=(N,4)
+        M = compute_overlap_ratio(bboxes, patch_coords)  # (N, num_patches)
 
-        patch_coords = self._get_patch_coords()
-        num_patches = patch_coords.size(0)
-        Mi = compute_overlap_ratio(bboxes, patch_coords)  # (N, num_patches)
+        # (4) ROI마다 <CLS> Self-Attn
+        # => ROI i => M[i], => <CLS> i
+        # => stack => (N, embed_dim)
+        all_roi_cls = []
+        N = M.size(0)  # 실제 ROI 수
 
-        attn_bias = self._build_attention_bias(Mi)  # (1+num_patches,1+num_patches)=(50,50)
+        for i in range(N):
+            # M[i] => shape=(num_patches,)
+            cls_i = self._build_single_roi_cls(feat, M[i])
+            all_roi_cls.append(cls_i)
 
-        # Transformer blocks
-        x = x.transpose(0,1)  # (1+num_patches,1,embed_dim)->(L,N,E)= (50,1,E)
-        for blk in visual.transformer.resblocks:
-            x = blk(x, attn_bias=attn_bias)  # (50,1,E)
-        x = x.transpose(0,1)  # (1,50,E)
-
-        cls_out = x[:,0,:]       # (1,E)
-        patch_out = x[:,1:,:]    # (1,49,E)->(49,E)
-        patch_out = patch_out.squeeze(0)
-
-        roi_embeddings = Mi @ patch_out  # (N,E)
-        node_embs = torch.cat((cls_out, roi_embeddings), dim=0) # (N+1,E)
-        return node_embs
+        # (5) shape => (N, embed_dim)
+        all_roi_cls = torch.stack(all_roi_cls, dim=0)  # (N, embed_dim)
+        return all_roi_cls

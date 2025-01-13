@@ -10,7 +10,11 @@ from torchvision import transforms
 
 def calc_face_part_bbox(landmarks, indices, image_size=224):
     """
-    indices에 해당하는 랜드마크 점들에 대해 x_min, y_min, x_max, y_max를 구한다.
+    목적:
+    - 지정된 랜드마크 인덱스들에 대해 bounding box 계산
+    데이터 shape:
+    - landmarks: (68, 2)
+    - 반환 bbox: (4,) = [x_min, y_min, x_max, y_max]
     """
     part_points = landmarks[list(indices)]  # shape: (len(indices), 2)
     x_min = max(np.min(part_points[:, 0]), 0)
@@ -21,13 +25,13 @@ def calc_face_part_bbox(landmarks, indices, image_size=224):
 
 class FFPlusDataset(Dataset):
     """
-    ff++_c23_landmark.csv를 읽고, 각 row에 대해
-    1) video_npy_path에서 16프레임 로드
-    2) landmark_npy_path에서 16프레임의 랜드마크 로드
-    3) 랜드마크를 이용해 ROI bbox 생성
-    => frames(16,3,224,224), bboxes(16,9,4), label
+    목적:
+    - FF++ 데이터셋을 로드하고, frames(16개), bboxes(16x9개 ROI) 등을 구성
+    데이터 shape:
+    - frames: (16, 3, 224, 224)
+    - bboxes: (16, 9, 4)
+    - label: int
     """
-
     def __init__(self, csv_path, dataset_type="train", transform=None, image_size=224):
         super().__init__()
         self.csv_path = csv_path
@@ -46,14 +50,17 @@ class FFPlusDataset(Dataset):
 
         # ROI 정의
         self.roi_indices = {
-            "jawline": range(0, 17),            # [0, 16]
-            "left_eyebrow": range(17, 22),      # [17, 21]
-            "right_eyebrow": range(22, 27),     # [22, 26]
+            # "jawline": range(0, 17),            # [0, 16]
+            # "left_eyebrow": range(17, 22),      # [17, 21]
+            # "right_eyebrow": range(22, 27),     # [22, 26]
+            "left_eyebrow + left_eye": range(17, 36),  # [17, 35]
+            "right_eyebrow + right_eye": range(22, 41),  # [22, 40]
             "nose": range(27, 36),              # [27, 35]
-            "left_eye": range(36, 42),          # [36, 41]
-            "right_eye": range(42, 48),         # [42, 47]
-            "outer_lip": range(48, 60),         # [48, 59]
-            "inner_lip": range(60, 68),         # [60, 67]
+            # "left_eye": range(36, 42),          # [36, 41]
+            # "right_eye": range(42, 48),         # [42, 47]
+            # "outer_lip": range(48, 60),         # [48, 59]
+            # "inner_lip": range(60, 68),         # [60, 67]
+            "mouth": range(48, 68),             # [48, 67]
             "whole_face": None                   # 전체 이미지
         }
         self.num_rois = len(self.roi_indices)

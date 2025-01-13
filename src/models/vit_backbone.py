@@ -20,7 +20,7 @@ class CLIPViTBackbone(nn.Module):
         
         # CLIP 모델 로드
         self.model, _ = clip.load(model_name, device=device, jit=False)
-        self.model.eval()  # 백본은 추론 모드로 고정 (학습하지 않음)
+        self.model.eval() # 학습 모드로 전환
         for param in self.model.parameters():
             param.requires_grad = False
         
