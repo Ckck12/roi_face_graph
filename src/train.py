@@ -9,11 +9,10 @@ import torch.optim as optim
 
 from src.data.dataloader import create_dataloader
 from src.engine import train_one_epoch, evaluate
-from src.models.final_model import FullPipelineModel
 from src.models.final_model_temporal_gat import FullTemporalGraphModel  # 추가
 from src.utils import set_seed, get_device, init_wandb, finish_wandb
-
-
+from src.models.full_gru_pipline import FullGRUPipelineModel  # 추가
+os.environ["CUDA_VISIBLE_DEVICES"] = "1,2,3,4,5,6,7"
 def main_train(config):
     # DDP 설정 여부 확인
     if config.get("ddp", False):
@@ -63,18 +62,19 @@ def main_train(config):
 
     # 모델 설정
     m_cfg = config["model"]
-    model = FullTemporalGraphModel(
+    model = FullGRUPipelineModel(
         model_name="ViT-B/32",
         device=device,
         image_size=m_cfg["image_size"],
         patch_size=m_cfg["patch_size"],
         hidden_dim=m_cfg["hidden_dim"],
+        gru_hidden_dim=512,  # GRU hidden dim 설정
         num_classes=m_cfg["num_classes"]
     ).to(device)
 
     # DDP로 모델 래핑
     if config.get("ddp", False):
-        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank], find_unused_parameters=True)
+        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank])
 
     # 손실 함수 및 옵티마이저 설정
     criterion = nn.CrossEntropyLoss()

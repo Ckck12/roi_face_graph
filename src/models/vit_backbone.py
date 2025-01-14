@@ -10,7 +10,7 @@ class CLIPViTBackbone(nn.Module):
     CLIP의 ViT 백본에서, 마지막 2개 Transformer 블록만 Unfreeze하고
     나머지는 Freeze 상태로 유지하는 예시.
     """
-    def __init__(self, model_name="ViT-B/32", device='cuda', num_finetune_blocks=2):
+    def __init__(self, model_name="ViT-B/32", device='cuda', num_finetune_blocks=6):
         super(CLIPViTBackbone, self).__init__()
         self.device = device
 
@@ -41,7 +41,7 @@ class CLIPViTBackbone(nn.Module):
         # 만약 <CLS> 토큰 관련이나, conv1 등을 같이 학습하려면 이 부분도 unfreeze
         # 예: visual.class_embedding.requires_grad = True
         #     visual.conv1.weight.requires_grad = True (optional)
-        
+
     def forward(self, x):
         """
         Forward 시, 마지막 2개 블록만 gradient가 생기고,

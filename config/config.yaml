@@ -1,7 +1,7 @@
 seed: 42
 batch_size: 6
-epochs: 5
-lr: 0.0001
+epochs: 20
+lr: 0.001
 num_workers: 32
 
 # DDP settings
@@ -10,7 +10,7 @@ dist_backend: "nccl"
 dist_url: "env://"
 
 # CSV 모델 경로
-csv_file: "./ff++_c23_copy.csv"
+csv_file: "./ff++_c23_landmark.csv"
 
 
 # Model config

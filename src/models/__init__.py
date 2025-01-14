@@ -4,8 +4,7 @@ from .vit_backbone import CLIPViTBackbone
 from .roi_aggregation import compute_overlap_ratio
 from .roi_vit_extractor import ROIViTExtractor
 from .gat_classifier import FacePartGAT
-from .final_model import FullPipelineModel
-from .roi_attention_pooling import ROIAttentionPooling
+from .full_gru_pipline import FullGRUPipelineModel
 
 __all__ = [
     "CLIPViTBackbone",
@@ -14,6 +13,6 @@ __all__ = [
     "ModifiedMultiheadAttention",
     "FacePartGAT",
     "FullPipelineModel",
-    "ROIAttentionPooling",
+    "FullGRUPipelineModel"
     
 ]
