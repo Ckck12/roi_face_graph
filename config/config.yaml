@@ -5,7 +5,7 @@ lr: 0.001
 num_workers: 32
 
 # DDP settings
-world_size: 4
+world_size: 8
 dist_backend: "nccl"
 dist_url: "env://"
 
@@ -23,6 +23,6 @@ model:
 
 
 # WandB
-wandb_project: "FacePartProject1"
+wandb_project: "FacePartProject"
 wandb_entity: ""
-wandb_run_name: "landmark_exp1"
+wandb_run_name: "landmark_exp"

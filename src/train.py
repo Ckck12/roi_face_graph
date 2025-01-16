@@ -9,19 +9,19 @@ import torch.optim as optim
 
 from src.data.dataloader import create_dataloader
 from src.engine import train_one_epoch, evaluate
-from src.models.final_model_temporal_gat import FullTemporalGraphModel  # 추가
 from src.utils import set_seed, get_device, init_wandb, finish_wandb
-from src.models.full_gru_pipline import FullGRUPipelineModel  # 추가
+
+# ★ 실제 위치와 클래스명에 맞게 import
+from src.models.full_gat_gru_pipeline import FullGATGRUPipelineModel
+
 
 def main_train(config):
-    # DDP 설정 여부 확인
+    # (1) DDP 여부 판단
     if config.get("ddp", False):
-        # torchrun이 설정한 LOCAL_RANK 환경 변수에서 local_rank 가져오기
         local_rank = int(os.environ.get("LOCAL_RANK", 0))
         torch.cuda.set_device(local_rank)
         device = torch.device(f"cuda:{local_rank}" if torch.cuda.is_available() else "cpu")
-        
-        # 분산 프로세스 그룹 초기화
+
         torch.distributed.init_process_group(
             backend=config["dist_backend"],
             init_method=config["dist_url"],
@@ -31,19 +31,19 @@ def main_train(config):
     else:
         device = get_device(0)
 
-    # 시드 설정
+    # (2) 시드 고정
     seed = config.get("seed", 42)
     set_seed(seed)
 
-    # WandB 초기화
+    # (3) WandB init
     wandb_run = init_wandb(config)
 
-    # DataLoader 설정
+    # (4) DataLoader 생성
     train_loader = create_dataloader(
         csv_path=config["csv_file"],
         dataset_type="train",
         batch_size=config["batch_size"],
-        shuffle=not config.get("ddp", False),  # DDP일 때는 DistributedSampler에서 shuffle 처리
+        shuffle=not config.get("ddp", False),
         num_workers=config["num_workers"],
         image_size=config["model"]["image_size"],
         distributed=config.get("ddp", False),
@@ -60,60 +60,67 @@ def main_train(config):
         distributed=False
     )
 
-    # 모델 설정
+    # (5) 모델 설정
     m_cfg = config["model"]
-    model = FullGRUPipelineModel(
+
+    # 예: model_name, device, image_size, patch_size, hidden_dim 등등
+    # GAT/GRU 세부 hyperparam도 넘겨줄 수 있음
+    model = FullGATGRUPipelineModel(
         model_name="ViT-B/32",
         device=device,
         image_size=m_cfg["image_size"],
         patch_size=m_cfg["patch_size"],
         hidden_dim=m_cfg["hidden_dim"],
-        gru_hidden_dim=512,  # GRU hidden dim 설정
+        gat_hidden=128,
+        gat_heads=2,
+        gat_dropout=0.3,
+        gru_hidden_dim=512,
+        gru_dropout=0.3,
         num_classes=m_cfg["num_classes"]
     ).to(device)
 
-    # DDP로 모델 래핑
+    # (6) DDP 래핑
     if config.get("ddp", False):
         model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[local_rank])
 
-    # 손실 함수 및 옵티마이저 설정
+    # (7) criterion, optimizer
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.Adam(model.parameters(), lr=config["lr"])
 
     best_auc = 0.0
     epochs = config["epochs"]
 
+    # (8) 학습 루프
     for epoch in range(epochs):
         if config.get("ddp", False):
-            train_loader.sampler.set_epoch(epoch)  # DistributedSampler에서 epoch 설정
+            train_loader.sampler.set_epoch(epoch)
 
-        train_loss, train_acc, train_auc = train_one_epoch(
+        # (loss, acc, auc, recall)
+        train_loss, train_acc, train_auc, train_recall = train_one_epoch(
             model, train_loader, criterion, optimizer, device, epoch, wandb=wandb_run
         )
-        val_loss, val_acc, val_auc = evaluate(
+        val_loss, val_acc, val_auc, val_recall = evaluate(
             model, val_loader, criterion, device, epoch, "val", wandb=wandb_run
         )
 
-        # 모든 프로세스가 동기화
         if config.get("ddp", False):
             torch.distributed.barrier()
 
-        # 로그 및 모델 저장 (rank 0 프로세스만 수행)
         if config.get("rank", 0) == 0:
             print(f"[Epoch {epoch+1}/{epochs}] "
-                  f"TrainLoss={train_loss:.4f} Acc={train_acc:.4f} AUC={train_auc:.4f} | "
-                  f"ValLoss={val_loss:.4f} Acc={val_acc:.4f} AUC={val_auc:.4f}")
+                  f"TrainLoss={train_loss:.4f} Acc={train_acc:.4f} AUC={train_auc:.4f} Recall={train_recall:.4f} | "
+                  f"ValLoss={val_loss:.4f} Acc={val_acc:.4f} AUC={val_auc:.4f} Recall={val_recall:.4f}")
 
+            # 기존 AUC로 best check 시
             if val_auc > best_auc:
                 best_auc = val_auc
-                torch.save(model.module.state_dict(), "best_model.pt")  # DDP 래핑된 모델에서는 model.module 사용
+                torch.save(model.module.state_dict(), "best_model.pt")
                 print("[안내] 새로운 최고 AUC 갱신! 모델 저장 완료.")
 
-    # 프로세스 그룹 정리
+    # (9) 정리
     if config.get("ddp", False):
         torch.distributed.destroy_process_group()
 
-    # WandB 종료
     finish_wandb()
 
 def main():
@@ -125,10 +132,8 @@ def main():
     with open(args.config, 'r') as f:
         config = yaml.safe_load(f)
 
-    # DDP 설정
     config["ddp"] = args.ddp
     if args.ddp:
-        # torchrun이 설정한 RANK 환경 변수에서 rank 가져오기
         config["rank"] = int(os.environ.get("RANK", 0))
     else:
         config["rank"] = 0
