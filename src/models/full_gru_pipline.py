@@ -69,8 +69,3 @@ class FullGRUPipelineModel(nn.Module):
         logits = self.classifier(batch_all_roi_cls)  # (B, num_classes)
 
         return logits
-
-
-# 이 최종모델의 파라미터수 계산
-def count_parameters(model):
-    return sum(p.numel() for p in model.parameters() if p.requires_grad)

@@ -4,7 +4,7 @@ import torch
 import numpy as np
 from tqdm import tqdm
 from src.utils.metrics import compute_metrics
-        
+
 def evaluate(
     model,
     dataloader,
@@ -14,28 +14,49 @@ def evaluate(
     mode="val",
     wandb=None
 ):
+    """
+    *비디오 레벨* 평가 루프.
+    - frames: (B, T, 3, H, W)
+    - bboxes: (B, T, N, 4)
+    - labels: (B,)
+    => model(...) -> (B, num_classes)
+    => label도 (B,)
+    """
     model.eval()
     running_loss = 0.0
+    total_samples = 0
+    
     y_true_list = []
     y_pred_probs_list = []
 
     with torch.no_grad():
         for batch in tqdm(dataloader, desc=f"Evaluating({mode}) Epoch {epoch+1}"):
-            frames = batch["frames"].to(device)
-            bboxes = batch["bboxes"].to(device)
-            labels = batch["label"].to(device)
+            frames = batch["frames"].to(device)   # (B,T,3,H,W)
+            bboxes = batch["bboxes"].to(device)   # (B,T,N,4)
+            labels = batch["label"].to(device)    # (B,)
 
-            outputs = model(frames, bboxes)  # (B, num_classes)
+            B = frames.size(0)
+
+            # Forward => (B, num_classes)
+            outputs = model(frames, bboxes)
             loss = criterion(outputs, labels)
-            running_loss += loss.item() * frames.size(0)  # 배치 손실 * 배치 크기
 
-            probs = torch.softmax(outputs, dim=1)[:,1].detach().cpu().numpy()  # 양성 클래스 확률 추출
-            y_true_list.extend(labels.cpu().numpy())        # 실제 레이블 추가
-            y_pred_probs_list.extend(probs)                 # 예측 확률 추가
+            # 배치 손실 * B
+            running_loss += loss.item() * B
+            total_samples += B
 
-    avg_loss = running_loss / len(dataloader.dataset)  # 전체 샘플 수로 나누기
+            # 양성 클래스 확률 => (B,)
+            probs = torch.softmax(outputs, dim=1)[:, 1].cpu().numpy()
+
+            # 누적
+            y_true_list.extend(labels.cpu().numpy())        # (B,)
+            y_pred_probs_list.extend(probs)                 # (B,)
+
+    # 최종 손실
+    avg_loss = running_loss / total_samples
+
+    # 비디오 단위 Acc/AUC
     acc, auc = compute_metrics(np.array(y_true_list), np.array(y_pred_probs_list))
-
 
     if wandb is not None:
         wandb.log({f"{mode}_loss": avg_loss, f"{mode}_acc": acc, f"{mode}_auc": auc}, step=epoch)
