@@ -1,11 +1,11 @@
 seed: 42
-batch_size: 6
+batch_size: 16
 epochs: 20
 lr: 0.001
 num_workers: 32
 
 # DDP settings
-world_size: 7
+world_size: 4
 dist_backend: "nccl"
 dist_url: "env://"
 
@@ -23,6 +23,6 @@ model:
 
 
 # WandB
-wandb_project: "FacePartProject"
+wandb_project: "FacePartProject1"
 wandb_entity: ""
-wandb_run_name: "landmark_exp"
+wandb_run_name: "landmark_exp1"

@@ -5,7 +5,7 @@ import torch
 import numpy as np
 from tqdm import tqdm
 from src.utils.metrics import compute_metrics  # 메트릭 계산 함수를 외부 모듈에서 임포트
-os.environ["CUDA_VISIBLE_DEVICES"] = "1,2,3,4,5,6,7"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0,1,2,3"
 def train_one_epoch(
     model,
     dataloader,

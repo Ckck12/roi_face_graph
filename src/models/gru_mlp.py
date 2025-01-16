@@ -17,11 +17,15 @@ class GRUMLPClassifier(nn.Module):
         self.mlp = nn.Sequential(
             nn.Linear(gru_hidden_dim, gru_hidden_dim//2),
             nn.ReLU(),
+            nn.BatchNorm1d(gru_hidden_dim//2),
+            nn.Dropout(p=0.5),
             nn.Linear(gru_hidden_dim//2, gru_hidden_dim//4),
             nn.ReLU(),
+            nn.BatchNorm1d(gru_hidden_dim//4),
+            nn.Dropout(p=0.5),
             nn.Linear(gru_hidden_dim//4, num_classes)
         )
-
+        
     def forward(self, all_roi_cls_batch):
         """
         Args:

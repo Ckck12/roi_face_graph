@@ -5,7 +5,7 @@ import yaml
 import sys
 import os
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1,2,3,4,5,6,7"
+# os.environ["CUDA_VISIBLE_DEVICES"] = "1,2,3,4,5,6,7"
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=str, default="./config/config.yaml")

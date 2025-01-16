@@ -12,7 +12,7 @@ from src.engine import train_one_epoch, evaluate
 from src.models.final_model_temporal_gat import FullTemporalGraphModel  # 추가
 from src.utils import set_seed, get_device, init_wandb, finish_wandb
 from src.models.full_gru_pipline import FullGRUPipelineModel  # 추가
-os.environ["CUDA_VISIBLE_DEVICES"] = "1,2,3,4,5,6,7"
+
 def main_train(config):
     # DDP 설정 여부 확인
     if config.get("ddp", False):
