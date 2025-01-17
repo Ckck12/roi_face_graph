@@ -3,7 +3,13 @@ import cv2
 import numpy as np
 from PIL import Image
 
-def extract_32_frames(video_path):
+def extract_16_frames(video_path):
+    """
+    목적:
+    - 비디오에서 16 프레임을 균등 간격으로 추출
+    데이터 shape:
+    - 반환: 16 PIL.Image 객체 리스트
+    """
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         raise FileNotFoundError(f"[에러] 비디오 파일을 열 수 없습니다: {video_path}")
@@ -13,8 +19,8 @@ def extract_32_frames(video_path):
         cap.release()
         raise ValueError("[에러] 비디오에 유효한 프레임이 없습니다.")
 
-    # 32프레임 균등 간격 추출
-    interval = total_frames / 32.0
+    # 16프레임 균등 간격 추출
+    interval = total_frames / 16.0
     indices = [int(round(i * interval)) for i in range(32)]
 
     frames = []

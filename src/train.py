@@ -14,7 +14,7 @@ from src.utils import set_seed, get_device, init_wandb, finish_wandb
 # ★ 실제 위치와 클래스명에 맞게 import
 from src.models.full_gat_gru_pipeline import FullGATGRUPipelineModel
 
-
+# os.environ["CUDA_VISIBLE_DEVICES"] = "4,5,6,7"
 def main_train(config):
     # (1) DDP 여부 판단
     if config.get("ddp", False):

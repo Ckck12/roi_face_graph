@@ -37,7 +37,7 @@ def create_dataloader(
         csv_path=csv_path,
         dataset_type=dataset_type,
         transform=tfm,
-        image_size=image_size
+        image_size=image_size,
     )
 
     print(f"[로딩 알림] FFPlusDataset 생성 완료. dataset 길이: {len(dataset)}")
@@ -59,7 +59,7 @@ def create_dataloader(
         batch_size=batch_size,
         shuffle=(sampler is None and shuffle),
         num_workers=num_workers,
-        sampler=sampler
+        sampler=sampler,
     )
 
     print("[로딩 알림] DataLoader 생성 완료!")

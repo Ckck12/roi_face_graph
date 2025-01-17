@@ -5,8 +5,11 @@ import numpy as np
 
 class Landmark68Detector:
     """
-    dlib의 frontal_face_detector + shape_predictor_68_face_landmarks.dat를 이용해
-    68개 랜드마크를 검출한다.
+    목적:
+    - dlib 기반 얼굴 검출 후 68개 랜드마크 좌표를 예측
+    데이터 shape:
+    - 입력: (H, W, 3) RGB 이미지
+    - 출력: (68, 2) 랜드마크 좌표
     """
 
     def __init__(self, shape_predictor_path: str):
@@ -19,10 +22,9 @@ class Landmark68Detector:
     def detect_landmarks(self, image_array):
         """
         Args:
-            image_array: (H,W,3) numpy (RGB)
+            image_array: (H, W, 3) RGB
         Returns:
-            list of (68,2) => 68개 (x,y)
-            한 프레임에 여러 얼굴이 있으면, 첫 번째 얼굴만 사용
+            (68, 2) or None
         """
         gray = cv2.cvtColor(image_array, cv2.COLOR_RGB2GRAY)
         faces = self.detector(gray, 1)
